@@ -1,127 +1,113 @@
 <?php
-require_once (__DIR__ . '/../config.php');
+require_once (__DIR__ . '/../models/TodoModel.php');
 
-class TodoModel
+class TodoController
 {
-    private $conn;
-
-    public function __construct()
+    public function index()
     {
-        // Inisialisasi koneksi database PostgreSQL
-        $this->conn = pg_connect('host=' . DB_HOST . ' port=' . DB_PORT . ' dbname=' . DB_NAME . ' user=' . DB_USER . ' password=' . DB_PASSWORD);
-        if (!$this->conn) {
-            die('Koneksi database gagal');
+        $todoModel = new TodoModel();
+        $todos = $todoModel->getAllTodos();
+        include (__DIR__ . '/../views/TodoView.php');
+    }
+
+    public function create()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $activity = trim($_POST['activity']);
+            $todoModel = new TodoModel();
+
+            // 🔍 Cek duplikasi todo sebelum membuat baru
+            if ($todoModel->isTodoExists($activity)) {
+                session_start();
+                $_SESSION['error'] = "Todo dengan judul '$activity' sudah ada!";
+                header('Location: index.php');
+                exit;
+            }
+
+            $todoModel->createTodo($activity);
+        }
+        header('Location: index.php');
+    }
+
+    public function update()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = $_POST['id'];
+            $activity = trim($_POST['activity']);
+            $status = $_POST['status'];
+            $todoModel = new TodoModel();
+
+            // 🔍 Cek duplikasi (kecuali todo ini sendiri)
+            if ($todoModel->isTodoExists($activity, $id)) {
+                session_start();
+                $_SESSION['error'] = "Todo dengan judul '$activity' sudah ada!";
+                header('Location: index.php');
+                exit;
+            }
+
+            // ✅ Lanjut update setelah validasi
+            $todoModel->updateTodo($id, $activity, $status);
+        }
+        header('Location: index.php');
+    }
+
+    public function delete()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
+            $id = $_GET['id'];
+            $todoModel = new TodoModel();
+            $todoModel->deleteTodo($id);
+        }
+        header('Location: index.php');
+    }
+
+    public function filter()
+    {
+        if (isset($_GET['status']) && in_array($_GET['status'], ['0', '1'])) {
+            $status = $_GET['status']; // 0 untuk belum selesai, 1 untuk selesai
+            $todoModel = new TodoModel();
+            $todos = $todoModel->getTodosByStatus($status);
+            include (__DIR__ . '/../views/TodoView.php');
+        } else {
+            header('Location: index.php');
         }
     }
 
-    public function getAllTodos()
+    public function search()
     {
-        $query = 'SELECT * FROM todo';
-        $result = pg_query($this->conn, $query);
-        $todos = [];
-        if ($result && pg_num_rows($result) > 0) {
-            while ($row = pg_fetch_assoc($result)) {
-                $todos[] = $row;
+        if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['keyword'])) {
+            $keyword = trim($_GET['keyword']);
+            $status = isset($_GET['status']) ? $_GET['status'] : null; // null = semua
+
+            $todoModel = new TodoModel();
+            $todos = $todoModel->searchTodos($keyword, $status);
+            include (__DIR__ . '/../views/TodoView.php');
+        } else {
+            header('Location: index.php');
+        }
+    }
+
+    public function detail()
+    {
+        if (isset($_GET['id'])) {
+            $id = $_GET['id'];
+            $todoModel = new TodoModel();
+            $todo = $todoModel->getTodoById($id);
+            include (__DIR__ . '/../views/TodoDetailView.php');
+        } else {
+            header('Location: index.php');
+        }
+    }
+
+    public function reorder()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $positions = json_decode(file_get_contents('php://input'), true);
+            if (is_array($positions)) {
+                $todoModel = new TodoModel();
+                $todoModel->updatePositions($positions);
             }
         }
-        return $todos;
+        http_response_code(200);
     }
-
-    public function updatePositions($positions)
-{
-    foreach ($positions as $position => $id) {
-        $query = 'UPDATE todo SET position = $1 WHERE id = $2';
-        pg_query_params($this->conn, $query, [$position + 1, $id]);
-    }
-}
-
-
-    public function createTodo($activity)
-    {
-        $query = 'INSERT INTO todo (activity) VALUES ($1)';
-        $result = pg_query_params($this->conn, $query, [$activity]);
-        return $result !== false;
-    }
-
-    public function updateTodo($id, $activity, $status)
-    {
-        $query = 'UPDATE todo SET activity=$1, status=$2 WHERE id=$3';
-        $result = pg_query_params($this->conn, $query, [$activity, $status, $id]);
-        return $result !== false;
-    }
-
-    public function deleteTodo($id)
-    {
-        $query = 'DELETE FROM todo WHERE id=$1';
-        $result = pg_query_params($this->conn, $query, [$id]);
-        return $result !== false;
-    }
-
-    public function getTodosBystatus($status)
-    {
-        $query ='SELECT * FROM todo WHERE status= $1 ORDER BY created_at DESC';
-        $result = pg_query_params($this->conn, $query, [$status]); 
-        $todos = [];
-        if ($result && pg_num_rows($result) > 0) {
-            while ($row = pg_fetch_assoc($result)) {
-                $todos[] = $row;
-            }
-        }
-        return $todos;
-    }
-
-    public function searchTodos($keyword, $status = null)
-{
-    if ($status === null) {
-        // Jika filter "Semua"
-        $query = "SELECT * FROM todo WHERE activity ILIKE $1 ORDER BY created_at DESC";
-        $params = ["%" . $keyword . "%"];
-    } else {
-        // Jika filter Selesai / Belum Selesai
-        $query = "SELECT * FROM todo WHERE status = $1 AND activity ILIKE $2 ORDER BY created_at DESC";
-        $params = [$status, "%" . $keyword . "%"];
-    }
-
-    $result = pg_query_params($this->conn, $query, $params);
-    $todos = [];
-    if ($result && pg_num_rows($result) > 0) {
-        while ($row = pg_fetch_assoc($result)) {
-            $todos[] = $row;
-        }
-    }
-    return $todos;
-}
-
-public function isTodoExists($activity, $excludeId = null)
-{
-    if ($excludeId) {
-        //saat update, abaikan todo dengan ID yang sama
-        $query = 'SELECT COUNT(*) FROM todo WHERE LOWER(activity) = LOWER($1) AND id != $2';
-        $result = [$activity, $excludeId];
-    } else {
-        //saat create
-        $query = 'SELECT COUNT(*) FROM todo WHERE LOWER(activity) = LOWER($1)';
-        $params = [$activity];
-    }
-
-    $result = pg_query_params($this->conn, $query, $params);
-    if ($result){
-        $count = pg_fetch_result($result, 0, 0);
-        return $count > 0;
-    }
-    return false;
-}
-
-public function getTodoById($id)
-{
-    $query = 'SELECT * FROM todo WHERE id = $1';
-    $result = pg_query_params($this->conn, $query, [$id]);
-    if ($result && pg_num_rows($result) > 0) {
-        return pg_fetch_assoc($result);
-    }
-    return null;
-}
-
-
-
 }
