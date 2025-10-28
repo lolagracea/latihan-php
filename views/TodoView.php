@@ -22,9 +22,9 @@ if (isset($_SESSION['error'])): ?>
             </div>
             <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <a href="?page=index" class="btn btn-outline-secondary btn-sm">Semua</a>
-        <a href="?page=filter&status=0" class="btn btn-outline-danger btn-sm">Belum Selesai</a>
-        <a href="?page=filter&status=1" class="btn btn-outline-success btn-sm">Selesai</a>
+        <a href="?page=index" class="btn <?= !isset($_GET['status']) ? 'btn-secondary' : 'btn-outline-secondary' ?> btn-sm">Semua</a>
+        <a href="?page=filter&status=0" class="btn <?= isset($_GET['status']) && $_GET['status'] == '0' ? 'btn-danger' : 'btn-outline-danger' ?> btn-sm">Belum Selesai</a>
+        <a href="?page=filter&status=1" class="btn <?= isset($_GET['status']) && $_GET['status'] == '1' ? 'btn-success' : 'btn-outline-success' ?> btn-sm">Selesai</a>
     </div>
 
     <form action="?page=search" method="GET" class="d-flex" style="gap: 5px;">
