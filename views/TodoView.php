@@ -220,7 +220,7 @@ function showModalDeleteTodo(todoId, activity) {
     myModal.show();
 }
 
-function showModalDetailTodo(todoId, activity, description, status, createdAt, updatedAt) {
+function showModalDetailTodo(activity, description, status, createdAt, updatedAt) {
     document.getElementById("detailActivity").innerText = activity;
     document.getElementById("detailDescription").innerText = description || "-";
     document.getElementById("detailStatus").innerHTML = 

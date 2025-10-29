@@ -43,11 +43,13 @@ class TodoModel
     }
 
     public function updateTodo($id, $activity, $status)
-    {
-        $query = 'UPDATE todo SET activity=$1, status=$2, updated_at = CURRENT_TIMESTAMP WHERE id=$3';
-        $result = pg_query_params($this->conn, $query, [$activity, $status, $id]);
-        return $result !== false;
-    }
+{
+    $query = 'UPDATE todo SET activity=$1, status=$2, updated_at=NOW() 
+              WHERE id=$3';
+    $result = pg_query_params($this->conn, $query, [$activity, $status, $id]);
+    return $result !== false;
+}
+
 
     public function deleteTodo($id)
     {
