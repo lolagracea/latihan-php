@@ -236,7 +236,7 @@ function showModalDetailTodo(activity, description, status, createdAt, updatedAt
 
 const todoList = document.getElementById('todoList');
 
-new Sortable(todoList, {
+new Sortable(document.getElementById('todoList'), {
     handle: '.handle',
     animation: 150,
     onEnd: function () {
@@ -252,6 +252,7 @@ new Sortable(todoList, {
         });
     }
 });
+
 </script>
 </body>
 </html>
