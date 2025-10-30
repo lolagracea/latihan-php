@@ -7,94 +7,99 @@
 <body>
 <div class="container-fluid p-5">
     <div class="card">
-       <div class="card-body">
-    <?php
-session_start();
-if (isset($_SESSION['error'])): ?>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <?= htmlspecialchars($_SESSION['error']) ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-<?php unset($_SESSION['error']); endif; ?>
-    <div class="d-flex justify-content-between align-items-center">
-        <h1>Todo List</h1>
+        <div class="card-body">
+            <?php
+            session_start();
+            if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars($_SESSION['error']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php unset($_SESSION['error']); endif; ?>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Todo List</h1>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTodo">Tambah Data</button>
             </div>
+
             <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <a href="?page=index" class="btn <?= !isset($_GET['status']) ? 'btn-secondary' : 'btn-outline-secondary' ?> btn-sm">Semua</a>
-        <a href="?page=filter&status=0" class="btn <?= isset($_GET['status']) && $_GET['status'] == '0' ? 'btn-danger' : 'btn-outline-danger' ?> btn-sm">Belum Selesai</a>
-        <a href="?page=filter&status=1" class="btn <?= isset($_GET['status']) && $_GET['status'] == '1' ? 'btn-success' : 'btn-outline-success' ?> btn-sm">Selesai</a>
-    </div>
+                <div>
+                    <a href="?page=index" class="btn <?= !isset($_GET['status']) ? 'btn-secondary' : 'btn-outline-secondary' ?> btn-sm">Semua</a>
+                    <a href="?page=filter&status=0" class="btn <?= isset($_GET['status']) && $_GET['status'] == '0' ? 'btn-danger' : 'btn-outline-danger' ?> btn-sm">Belum Selesai</a>
+                    <a href="?page=filter&status=1" class="btn <?= isset($_GET['status']) && $_GET['status'] == '1' ? 'btn-success' : 'btn-outline-success' ?> btn-sm">Selesai</a>
+                </div>
 
-    <form action="?page=search" method="GET" class="d-flex" style="gap: 5px;">
-        <input type="hidden" name="page" value="search">
-        <?php if (isset($_GET['status'])): ?>
-            <input type="hidden" name="status" value="<?= htmlspecialchars($_GET['status']) ?>">
-        <?php endif; ?>
-        <input type="text" name="keyword" class="form-control form-control-sm"
-               placeholder="Cari aktivitas..." value="<?= isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword']) : '' ?>">
-        <button type="submit" class="btn btn-sm btn-primary">Cari</button>
-    </form>
-
-</div>
-
-
+                <form action="?page=search" method="GET" class="d-flex" style="gap: 5px;">
+                    <input type="hidden" name="page" value="search">
+                    <?php if (isset($_GET['status'])): ?>
+                        <input type="hidden" name="status" value="<?= htmlspecialchars($_GET['status']) ?>">
+                    <?php endif; ?>
+                    <input type="text" name="keyword" class="form-control form-control-sm"
+                        placeholder="Cari aktivitas..." value="<?= isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword']) : '' ?>">
+                    <button type="submit" class="btn btn-sm btn-primary">Cari</button>
+                </form>
+            </div>
 
             <hr />
+
             <table class="table table-striped">
-    <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Aktivitas</th>
-            <th scope="col">Status</th>
-            <th scope="col">Tanggal Dibuat</th>
-            <th scope="col">Tindakan</th>
-        </tr>
-    </thead>
-    <tbody id="todoList">
-    <?php if (!empty($todos)): ?>
-        <?php foreach ($todos as $i => $todo): ?>
-        <tr data-id="<?= $todo['id'] ?>">
-            <td class="handle" style="cursor: move;">☰</td>
-            <td><?= htmlspecialchars($todo['activity']) ?></td>
-            <td>
-                <?php if ($todo['status']): ?>
-                    <span class="badge bg-success">Selesai</span>
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Aktivitas</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Tanggal Dibuat</th>
+                        <th scope="col">Tindakan</th>
+                    </tr>
+                </thead>
+                <tbody id="todoList">
+                <?php if (!empty($todos)): ?>
+                    <?php foreach ($todos as $i => $todo): ?>
+                    <tr data-id="<?= $todo['id'] ?>">
+                        <td class="handle" style="cursor: move;">☰</td>
+                        <td><?= htmlspecialchars($todo['activity']) ?></td>
+                        <td>
+                            <?php if ($todo['status']): ?>
+                                <span class="badge bg-success">Selesai</span>
+                            <?php else: ?>
+                                <span class="badge bg-danger">Belum Selesai</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= date('d F Y - H:i', strtotime($todo['created_at'])) ?></td>
+                        <td>
+                            <button class="btn btn-sm btn-info"
+                                onclick="showModalDetailTodo(
+                                    '<?= htmlspecialchars(addslashes($todo['activity'])) ?>',
+                                    '<?= htmlspecialchars(addslashes($todo['description'] ?? '')) ?>',
+                                    <?= $todo['status'] ?>,
+                                    '<?= htmlspecialchars($todo['created_at']) ?>',
+                                    '<?= htmlspecialchars($todo['updated_at']) ?>'
+                                )">
+                                Detail
+                            </button>
+                            <button class="btn btn-sm btn-warning"
+                                onclick="showModalEditTodo(
+                                    <?= $todo['id'] ?>,
+                                    '<?= htmlspecialchars(addslashes($todo['activity'])) ?>',
+                                    '<?= htmlspecialchars(addslashes($todo['description'] ?? '')) ?>',
+                                    <?= $todo['status'] ?>
+                                )">
+                                Ubah
+                            </button>
+                            <button class="btn btn-sm btn-danger"
+                                onclick="showModalDeleteTodo(<?= $todo['id'] ?>, '<?= htmlspecialchars(addslashes($todo['activity'])) ?>')">
+                                Hapus
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
                 <?php else: ?>
-                    <span class="badge bg-danger">Belum Selesai</span>
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Belum ada data tersedia!</td>
+                    </tr>
                 <?php endif; ?>
-            </td>
-            <td><?= date('d F Y - H:i', strtotime($todo['created_at'])) ?></td>
-            <td>
-                <button class="btn btn-sm btn-info"
-                    onclick="showModalDetailTodo(
-                        '<?= htmlspecialchars(addslashes($todo['activity'])) ?>',
-                        '<?= htmlspecialchars(addslashes($todo['description'] ?? '')) ?>',
-                        <?= $todo['status'] ?>,
-                        '<?= htmlspecialchars($todo['created_at']) ?>',
-                        '<?= htmlspecialchars($todo['updated_at']) ?>'
-                    )">
-                    Detail
-                </button>
-                <button class="btn btn-sm btn-warning"
-                    onclick="showModalEditTodo(<?= $todo['id'] ?>, '<?= htmlspecialchars(addslashes($todo['activity'])) ?>', <?= $todo['status'] ?>)">
-                    Ubah
-                </button>
-                <button class="btn btn-sm btn-danger"
-                    onclick="showModalDeleteTodo(<?= $todo['id'] ?>, '<?= htmlspecialchars(addslashes($todo['activity'])) ?>')">
-                    Hapus
-                </button>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <tr>
-            <td colspan="5" class="text-center text-muted">Belum ada data tersedia!</td>
-        </tr>
-    <?php endif; ?>
-    </tbody>
-</table>
+                </tbody>
+            </table>
 
         </div>
     </div>
@@ -114,6 +119,10 @@ if (isset($_SESSION['error'])): ?>
                         <label for="inputActivity" class="form-label">Aktivitas</label>
                         <input type="text" name="activity" class="form-control" id="inputActivity"
                             placeholder="Contoh: Belajar membuat aplikasi website sederhana" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="inputDescription" class="form-label">Deskripsi</label>
+                        <textarea name="description" class="form-control" id="inputDescription" rows="3" placeholder="Tambahkan deskripsi kegiatan..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -138,8 +147,11 @@ if (isset($_SESSION['error'])): ?>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="inputEditActivity" class="form-label">Aktivitas</label>
-                        <input type="text" name="activity" class="form-control" id="inputEditActivity"
-                            placeholder="Contoh: Belajar membuat aplikasi website sederhana" required>
+                        <input type="text" name="activity" class="form-control" id="inputEditActivity" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="inputEditDescription" class="form-label">Deskripsi</label>
+                        <textarea name="description" class="form-control" id="inputEditDescription" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
                         <label for="selectEditStatus" class="form-label">Status</label>
@@ -202,17 +214,18 @@ if (isset($_SESSION['error'])): ?>
   </div>
 </div>
 
-
 <script src="/assets/vendor/bootstrap-5.3.8-dist/js/bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-function showModalEditTodo(todoId, activity, status) {
+function showModalEditTodo(todoId, activity, description, status) {
     document.getElementById("inputEditTodoId").value = todoId;
     document.getElementById("inputEditActivity").value = activity;
+    document.getElementById("inputEditDescription").value = description;
     document.getElementById("selectEditStatus").value = status;
     var myModal = new bootstrap.Modal(document.getElementById("editTodo"));
     myModal.show();
 }
+
 function showModalDeleteTodo(todoId, activity) {
     document.getElementById("deleteTodoActivity").innerText = activity;
     document.getElementById("btnDeleteTodo").setAttribute("href", `?page=delete&id=${todoId}`);
@@ -234,8 +247,7 @@ function showModalDetailTodo(activity, description, status, createdAt, updatedAt
     myModal.show();
 }
 
-const todoList = document.getElementById('todoList');
-
+// Reordering menggunakan SortableJS
 new Sortable(document.getElementById('todoList'), {
     handle: '.handle',
     animation: 150,
@@ -244,7 +256,6 @@ new Sortable(document.getElementById('todoList'), {
         document.querySelectorAll('#todoList tr').forEach(row => {
             order.push(row.dataset.id);
         });
-
         fetch('?page=reorder', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -252,7 +263,6 @@ new Sortable(document.getElementById('todoList'), {
         });
     }
 });
-
 </script>
 </body>
 </html>
